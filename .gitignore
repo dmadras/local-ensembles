@@ -1,0 +1,16 @@
+*.swp
+*.swo
+journal/*
+*__pycache__*
+*_old*
+cmds/*
+Session.vim
+Untitled*
+.ipynb_checkpoints/*
+*.dat
+mprof*
+logs/*
+*DS_Store
+iclr_figs/*
+check/*
+
