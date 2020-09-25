@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import scipy.linalg
 import tensorflow as tf
 from sklearn.metrics import roc_auc_score
-from influence import calculate_influence as ci
 from utils import tensor_utils as tu
 from utils.dataset_iterator import DatasetIterator
+from local_ensembles import second_order as so
 
 # build small neural network
 class MLPRegressor(tf.keras.Model):
@@ -143,15 +143,15 @@ def train_NN(itr_train, itr_test, itr_ood, output_dims, n_steps, activ, hidden_l
 
 def estimate_Hessian(model, itr, num_hessian_est=10):
     # get the ground truth Hessian
-    loss_fn = ci.make_loss_fn(model, None)
-    grad_fn = ci.make_grad_fn(model)
-    map_grad_fn = ci.make_map_grad_fn(model)
+    loss_fn = so.make_loss_fn(model, None)
+    grad_fn = so.make_grad_fn(model)
+    map_grad_fn = so.make_map_grad_fn(model)
     with tf.GradientTape(persistent=True) as tape:
         loss_grads_total = 0
         for i in range(num_hessian_est):
             print('Estimating Hessian: minibatch {:d}'.format(i))
             x, y = itr.__next__()
-            loss_grads = ci.get_loss_grads(x, y, loss_fn, map_grad_fn)
+            loss_grads = so.get_loss_grads(x, y, loss_fn, map_grad_fn)
             loss_grads_total += tf.reduce_mean(tu.flat_concat(loss_grads), axis=0)
         loss_grads_total /= num_hessian_est
         print('Taking second derivative - this may be slow...')

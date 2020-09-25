@@ -7,14 +7,14 @@ import matplotlib.pyplot as plt
 import scipy.linalg
 import tensorflow as tf
 import pdb
-from influence import calculate_influence as ci
 from utils import tensor_utils as tu
 import local_ensembles_demo_lib as LE
 from local_ensembles import lanczos_functions as L
 from local_ensembles import evaluation_functions as eval_fns
+from local_ensembles import second_order as so
 from utils import utils
 import os
-mainfigdir = 'iclr_figs/'
+mainfigdir = 'test_git_figs/'
 figdir = utils.make_subdir(mainfigdir, 'small_NN_tanh_all_test')
 
 # random seeding
@@ -40,7 +40,7 @@ for _ in range(4):
 itr_ood_x = np.concatenate(itr_ood_x, axis=0)
 
 ensemble = []
-n_models = 20
+n_models = 5
 n_steps = 400
 activ = 'tanh'
 hidden_layer_sizes = [3, 3]
@@ -70,15 +70,15 @@ for model_ix in range(len(ensemble)):
         assert np.linalg.norm(w - true_evals[i] * v) < 1e-10 # assert it's correct
 
     # create and test the implicit HVP function
-    pred_fn = ci.make_pred_fn(model, 'MLP_regressor')
-    loss_fn = ci.make_loss_fn(model, None)
-    grad_fn = ci.make_grad_fn(model)
-    map_grad_fn = ci.make_map_grad_fn(model)
+    pred_fn = so.make_pred_fn(model, 'MLP_regressor')
+    loss_fn = so.make_loss_fn(model, None)
+    grad_fn = so.make_grad_fn(model)
+    map_grad_fn = so.make_map_grad_fn(model)
     explicit_hvp = lambda v: np.matmul(A, v)
 
     def implicit_hvp(v):
         v = tu.reshape_vector_as(model.weights, v.T)
-        hvp = ci.hvp(v, itr_train, loss_fn, grad_fn, map_grad_fn, n_samples=10)
+        hvp = so.hvp(v, itr_train, loss_fn, grad_fn, map_grad_fn, n_samples=10)
         hvp_concat = tu.flat_concat(hvp)
         return tf.transpose(hvp_concat).numpy()
 
@@ -147,7 +147,7 @@ for model_ix in range(len(ensemble)):
                 x.append(xb)
             x = np.concatenate(x, axis=0)
             # pred grads
-            loss_grads = tu.flat_concat(ci.get_pred_grads(x, pred_fn, map_grad_fn))
+            loss_grads = tu.flat_concat(so.get_pred_grads(x, pred_fn, map_grad_fn))
             proj_grads_coeff = np.matmul(loss_grads, big_est_evecs)
             proj_grads = np.matmul(proj_grads_coeff, big_est_evecs.T)
             small_grads = loss_grads - proj_grads
@@ -198,7 +198,7 @@ for model_ix in range(len(ensemble)):
         print(nm)
         small_grad_norms = []
         # pred grads
-        loss_grads = tu.flat_concat(ci.get_pred_grads(x, pred_fn, map_grad_fn))
+        loss_grads = tu.flat_concat(so.get_pred_grads(x, pred_fn, map_grad_fn))
         proj_grads_coeff = np.matmul(loss_grads, big_est_evecs)
         proj_grads = np.matmul(proj_grads_coeff, big_est_evecs.T)
         small_grads = loss_grads - proj_grads
